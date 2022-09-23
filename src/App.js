@@ -1,9 +1,12 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import data from "./data";
 
 const textIconLink = require("./icons8-text-50.png");
 
 function Diagram(props) {
+  const svgRef = useRef();
+  const tooltipTextRef = useRef();
+
   const { color_scheme, data } = props;
   const { name, data_quality_score, size: radius } = data;
   const { valid_count, invalid_count, missed_count } = data_quality_score[0];
@@ -69,13 +72,26 @@ function Diagram(props) {
     fontSize: (radius * 2) / 10,
   };
 
+  const onMouseEnter = (evt) => {
+    tooltipTextRef.current.setAttributeNS(null, "visibility", "visible");
+  };
+
+  const onMouseOut = (evt) => {
+    tooltipTextRef.current.setAttributeNS(null, "visibility", "hidden");
+  };
+
   return (
     <div
       style={{
         width: radius * 2 + strokeWidth * 2,
       }}
     >
-      <svg viewBox={`0 0 ${svgProps.viewBox.width} ${svgProps.viewBox.height}`}>
+      <svg
+        viewBox={`0 0 ${svgProps.viewBox.width} ${svgProps.viewBox.height}`}
+        ref={svgRef}
+        onMouseMove={onMouseEnter}
+        onMouseLeave={onMouseOut}
+      >
         <circle fill="lightblue" {...circleProps}></circle>
         <circle
           fill="transparent"
@@ -89,6 +105,18 @@ function Diagram(props) {
         <g>
           <text dominant-baseline="middle" text-anchor="middle" {...textProps}>
             {name}
+          </text>
+          <text x={0} y={0} visibility="hidden" ref={tooltipTextRef}>
+            <tspan x="0" dy="1.2em">
+              valid: ${((valid_count / totalCount) * 100).toFixed(2)}%
+            </tspan>
+            <tspan x="0" dy="1.2em">
+              invalid: ${((invalid_count / totalCount) * 100).toFixed(2)}
+            </tspan>
+            <tspan x="0" dy="1.2em">
+              {" "}
+              missing: ${((missed_count / totalCount) * 100).toFixed(2)}{" "}
+            </tspan>
           </text>
         </g>
       </svg>
