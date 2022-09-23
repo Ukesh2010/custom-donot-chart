@@ -1,77 +1,93 @@
 import { useMemo, useState } from "react";
 import data from "./data";
 
-const textToIcon = { text: require("./icons8-text-50.png") };
+const textIconLink = require("./icons8-text-50.png");
 
 function Diagram(props) {
   const { color_scheme, data } = props;
-  const { name, icon, data_quality_score, size } = data;
-
+  const { name, data_quality_score, size: radius } = data;
   const { valid_count, invalid_count, missed_count } = data_quality_score[0];
+  const totalCount = valid_count + invalid_count + missed_count;
+
+  const circumference = ((radius * 22) / 7) * 2;
+  const validCount = (valid_count * circumference) / totalCount;
+  const invalidCount = (invalid_count * circumference) / totalCount;
+  const missedCount = (missed_count * circumference) / totalCount;
+
+  const strokeWidth = radius * 0.2;
+  const svgProps = {
+    viewBox: {
+      width: radius * 2 + strokeWidth * 2,
+      height: radius * 2 + strokeWidth * 2 + (radius * 2) / 5,
+    },
+  };
+  const circleProps = {
+    cx: radius + strokeWidth,
+    cy: radius + strokeWidth,
+    r: radius,
+  };
+
+  const circleWithStrokeProps = {
+    ...circleProps,
+    "stroke-width": strokeWidth,
+  };
+
+  const validCountCircleProps = {
+    ...circleWithStrokeProps,
+    stroke: color_scheme.valid_count,
+    "stroke-dasharray": `${validCount} ${circumference - validCount}`,
+    "stroke-dashoffset": `${validCount}`,
+  };
+
+  const invalidCountCircleProps = {
+    ...circleWithStrokeProps,
+    stroke: color_scheme.invalid_count,
+    "stroke-dasharray": `${invalidCount} ${circumference - invalidCount}`,
+    "stroke-dashoffset": `${validCount + invalidCount}`,
+  };
+
+  const missingCountCircleProps = {
+    ...circleWithStrokeProps,
+    stroke: color_scheme.missing_count,
+    "stroke-dasharray": `${missedCount} ${circumference - missedCount}`,
+    "stroke-dashoffset": "0",
+  };
+
+  const heightWidth = radius / 2;
+  const imageProps = {
+    href: textIconLink,
+    x: radius + strokeWidth,
+    y: radius + strokeWidth,
+    height: heightWidth,
+    width: heightWidth,
+    transform: `translate(-${heightWidth / 2},-${heightWidth / 2})`,
+  };
+
+  const textProps = {
+    x: radius + strokeWidth,
+    y: radius * 2 + strokeWidth * 2 + (radius * 2) / 10,
+    fontSize: (radius * 2) / 10,
+  };
 
   return (
     <div
       style={{
-        width: size * 2,
+        width: radius * 2 + strokeWidth * 2,
       }}
     >
-      <svg width="100%" height="100%" viewBox="0 0 42 48">
-        <circle cx="21" cy="21" r="15.91549430918954" fill="lightblue"></circle>
+      <svg viewBox={`0 0 ${svgProps.viewBox.width} ${svgProps.viewBox.height}`}>
+        <circle fill="lightblue" {...circleProps}></circle>
         <circle
-          cx="21"
-          cy="21"
-          r="15.91549430918954"
           fill="transparent"
           stroke="#d2d3d4"
-          stroke-width="3"
+          {...circleWithStrokeProps}
         ></circle>
-
-        <circle
-          cx="21"
-          cy="21"
-          r="15.91549430918954"
-          fill="transparent"
-          stroke={color_scheme.valid_count}
-          stroke-width="3"
-          stroke-dasharray={`${valid_count} ${100 - valid_count}`}
-          stroke-dashoffset={`${valid_count}`}
-        ></circle>
-        <circle
-          cx="21"
-          cy="21"
-          r="15.91549430918954"
-          fill="transparent"
-          stroke={color_scheme.invalid_count}
-          stroke-width="3"
-          stroke-dasharray={`${invalid_count} ${100 - invalid_count}`}
-          stroke-dashoffset={`${valid_count + invalid_count}`}
-        ></circle>
-        <circle
-          cx="21"
-          cy="21"
-          r="15.91549430918954"
-          fill="transparent"
-          stroke={color_scheme.missing_count}
-          stroke-width="3"
-          stroke-dasharray={`${missed_count} ${100 - missed_count}`}
-          stroke-dashoffset="0"
-        ></circle>
-        <image
-          href={textToIcon[icon]}
-          x="50%"
-          y="50%"
-          height="24"
-          width="24"
-          transform="translate(-12,-12)"
-        />
+        <circle fill="transparent" {...validCountCircleProps}></circle>
+        <circle fill="transparent" {...invalidCountCircleProps}></circle>
+        <circle fill="transparent" {...missingCountCircleProps}></circle>
+        <image {...imageProps} />
         <g>
-          <text
-            x="50%"
-            y="90%"
-            dominant-baseline="middle"
-            text-anchor="middle"
-            fontSize={5}
-          >
+          <text dominant-baseline="middle" text-anchor="middle" {...textProps}>
             {name}
           </text>
         </g>
@@ -128,11 +144,9 @@ function App() {
       <div style={{ display: "flex", flexDirection: "row", flexFlow: "wrap" }}>
         {nodes.map((node) => {
           return (
-            <Diagram
-              key={node.name}
-              data={node}
-              color_scheme={data.meta.color_scheme}
-            />
+            <div key={node.name} style={{ padding: 20 }}>
+              <Diagram data={node} color_scheme={data.meta.color_scheme} />
+            </div>
           );
         })}
       </div>
